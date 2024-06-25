@@ -1,4 +1,7 @@
 #####  REQUIREMENTS
+
+---
+
 Node version 18
 
 ---
@@ -27,29 +30,39 @@ Backend API for the foodstyles search
 ---
 
 1. Clone the Repository
+
    `https://github.com/ekumamait/foodstyles-search.git`
 
 2. Navigate to the application directory
+
    `cd foodstyles-search`
 
 3. Setup your user credentials and create a database
+
    `psql -U your_username`
+
    `CREATE DATABASE foodstyles`
+
    `\q`
 
 4. Create a `.env` file in the root of the project use the content of _.env.example_ as a guide
+
    `cp .env.example .env`
 
 5. Install all dependencies
+
    `yarn install`
 
 6. Run necessary database migrations
+
    `yarn run migration:run`
 
 7. Seed the database to generate the basic dummy data in the database
+
    `yarn run seed:run`
 
 8. Start the application in watch mode
+
    `yarn run start:dev`
 
 ---
