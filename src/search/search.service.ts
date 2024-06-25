@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { City } from '../db/entities/city.entity';
 import { Brand } from '../db/entities/brand.entity';
 import { DishType } from '../db/entities/dishType.entity';
 import { Diet } from '../db/entities/diet.entity';
+import { SearchResultDto } from './dto/search-result.dto';
 
 @Injectable()
 export class SearchService {
@@ -19,37 +20,54 @@ export class SearchService {
     private readonly dietRepository: Repository<Diet>,
   ) {}
 
-  async extractEntities(searchTerm: string): Promise<any[]> {
+  private async findEntityByName(
+    repository: Repository<any>,
+    name: string,
+  ): Promise<any> {
+    return repository
+      .createQueryBuilder('entity')
+      .where('LOWER(entity.name) = LOWER(:name)', { name })
+      .getOne();
+  }
+
+  async getEntities(
+    searchTermDto: string,
+  ): Promise<{ message: string; results: SearchResultDto[] }> {
     const results = [];
 
-    if (!searchTerm) {
-      return results;
+    if (!searchTermDto) {
+      throw new BadRequestException('Search word is required.');
     }
 
-    const cities = await this.cityRepository.find();
-    const brands = await this.brandRepository.find();
-    const dishTypes = await this.dishTypeRepository.find();
-    const diets = await this.dietRepository.find();
-
-    const searchWords = searchTerm.toLowerCase().split(' ');
+    const searchWords = searchTermDto.toLowerCase()?.split(' ');
 
     for (const word of searchWords) {
-      const city = cities.find((c) => c.name.toLowerCase() === word);
-      const brand = brands.find((b) => b.name.toLowerCase() === word);
-      const dishType = dishTypes.find((d) => d.name.toLowerCase() === word);
-      const diet = diets.find((d) => d.name.toLowerCase() === word);
+      const city = await this.findEntityByName(this.cityRepository, word);
+      const brand = await this.findEntityByName(this.brandRepository, word);
+      const dishType = await this.findEntityByName(
+        this.dishTypeRepository,
+        word,
+      );
+      const diet = await this.findEntityByName(this.dietRepository, word);
 
-      const combination = {};
-      if (city) combination['city'] = city;
-      if (brand) combination['brand'] = brand;
-      if (dishType) combination['dishType'] = dishType;
-      if (diet) combination['diet'] = diet;
+      const combination: SearchResultDto = {};
+      if (city) combination.city = city;
+      if (brand) combination.brand = brand;
+      if (dishType) combination.dishType = dishType;
+      if (diet) combination.diet = diet;
 
       if (Object.keys(combination).length > 0) {
         results.push(combination);
       }
     }
 
-    return results;
+    if (results.length === 0) {
+      return {
+        message: 'Oops! We did not find what you are searching for.',
+        results: [],
+      };
+    }
+
+    return { message: 'Search successful', results };
   }
 }
