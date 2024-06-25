@@ -1,3 +1,8 @@
+#####  REQUIREMENTS
+Node version 18
+
+---
+
 ##### TABLE OF CONTENT;
 
 ---

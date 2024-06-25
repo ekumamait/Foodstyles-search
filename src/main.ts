@@ -1,11 +1,20 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import 'dotenv/config';
+import 'source-map-support/register';
 import { AppModule } from './app.module';
-import dotenv from 'dotenv';
 
 async function bootstrap() {
-  dotenv.config();
-
   const app = await NestFactory.create(AppModule);
-  await app.listen(3000);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidUnknownValues: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
