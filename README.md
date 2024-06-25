@@ -41,16 +41,16 @@ Backend API for the foodstyles search
    `cp .env.example .env`
 
 5. Install all dependencies
-   `npm install`
+   `yarn install`
 
 6. Run necessary database migrations
-   `npm run migration:run`
+   `yarn run migration:run`
 
 7. Seed the database to generate the basic dummy data in the database
-   `npm run seed:run`
+   `yarn run seed:run`
 
 8. Start the application in watch mode
-   `npm run start:dev`
+   `yarn run start:dev`
 
 ---
 
