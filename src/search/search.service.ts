@@ -22,6 +22,10 @@ export class SearchService {
   async extractEntities(searchTerm: string): Promise<any[]> {
     const results = [];
 
+    if (!searchTerm) {
+      return results;
+    }
+
     const cities = await this.cityRepository.find();
     const brands = await this.brandRepository.find();
     const dishTypes = await this.dishTypeRepository.find();

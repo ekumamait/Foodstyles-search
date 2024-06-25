@@ -6,7 +6,7 @@ export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
   @Get()
-  async search(@Query('term') term: string) {
+  async search(@Query('searchTerm') term: string) {
     return this.searchService.extractEntities(term);
   }
 }
