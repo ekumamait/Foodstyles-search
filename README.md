@@ -74,8 +74,12 @@ Backend API for the foodstyles search
 Here is an example link to the api request:
 **http://localhost:3000/search?searchTerm=vegan**
 
+---
+
 ###### TODOS;
 
 1: Use caching mechanisms to store and quickly retrieve results for frequently searched terms.
+
 2: Enhance Search Flexibility by introducing fuzzy search
+
 3: Implement Pagination to improve performance and user experience for large datasets
