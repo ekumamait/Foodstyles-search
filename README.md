@@ -1,18 +1,74 @@
-# Introduction
+##### TABLE OF CONTENT;
+
+------------
+
+- [x] **DESCRIPTION**
+- [x] **PROJECT SETUP**
+- [x] **AVAILABLE ROUTES**
+- [ ] **TESTS**
+- [x] **PROJECT DEMO**
+
+------------
+
+###### :page_facing_up: DESCRIPTION;
 
 Backend API for the foodstyles search
 
-# Getting Started
+------------
 
-Clone the git clone https://github.com/ekumamait/foodstyles-search.git
-cd `foodstyles-search`
+##### PROJECT SETUP
 
-- Setup your user credentials and create a database
-- Create a **.env** file using the content of _.env.example_ as a guide
-- Update the contents of the _.env_ file putting in the db parameters and preferred port
-- Run **npm install** to install necessary packages
-- Run **npm run migration:run** to run necessary database migrations
-- Run **npm start:dev** to start the application in watch mode, this will ensure necessary database migrations are run
-- Run **npm seed:run** to generate the basic dummy data in the database
+------------
 
-# Development
+1. Clone the Repository
+`https://github.com/ekumamait/foodstyles-search.git`
+
+2. Navigate to the application directory
+`cd foodstyles-search`
+
+3. Setup your user credentials and create a database
+`psql -U your_username`
+`CREATE DATABASE foodstyles`
+`\q`
+
+4. Create a `.env` file in the root of the project use the content of _.env.example_ as a guide
+`cp .env.example .env`
+
+5. Install all dependencies
+`npm install`
+
+6. Run necessary database migrations
+`npm run migration:run`
+
+7. Seed the database to generate the basic dummy data in the database
+`npm run seed:run`
+
+8. Start the application in watch mode
+`npm run start:dev`
+
+------------
+
+###### AVAILABLE ROUTES;
+
+|  EndPoint   | Methods | Functionality |
+| ------------ |------------| ------------ |
+| /search | GET | `search for items in our menu `  |
+
+------------
+
+
+###### :microscope: TESTS;
+
+- [ ] Tests for routes
+
+- command to run tests:
+    ` test:watch `
+
+- command to run tests with coverage:
+    ` test:cov `
+------------
+
+###### Project Demo;
+
+Here is an example link to the api request:
+**http://localhost:3000/search?searchTerm=vegan**

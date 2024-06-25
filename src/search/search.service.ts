@@ -23,7 +23,6 @@ export class SearchService {
   private async findEntitiesByType(
     repository: Repository<any>,
     searchWords: string[],
-    entityType: string,
   ): Promise<any[]> {
     const filteredWords = searchWords.filter((word) => word.length >= 3);
 
@@ -38,10 +37,7 @@ export class SearchService {
       });
     });
     const entities = await query.getMany();
-    return entities.map((entity) => ({
-      type: entityType,
-      ...entity,
-    }));
+    return entities;
   }
 
   async extractEntities(
@@ -67,22 +63,18 @@ export class SearchService {
     const cities = await this.findEntitiesByType(
       this.cityRepository,
       searchWords,
-      'city',
     );
     const brands = await this.findEntitiesByType(
       this.brandRepository,
       searchWords,
-      'brand',
     );
     const dishTypes = await this.findEntitiesByType(
       this.dishTypeRepository,
       searchWords,
-      'dishType',
     );
     const diets = await this.findEntitiesByType(
       this.dietRepository,
       searchWords,
-      'diet',
     );
 
     const allEntities = [...cities, ...brands, ...dishTypes, ...diets];
@@ -103,22 +95,28 @@ export class SearchService {
     const results: SearchResultDto[] = [];
 
     const entityMap = {
-      city: entities.filter((entity) => entity.type === 'city'),
-      brand: entities.filter((entity) => entity.type === 'brand'),
-      dishType: entities.filter((entity) => entity.type === 'dishType'),
-      diet: entities.filter((entity) => entity.type === 'diet'),
+      city: entities.filter((entity) => entity instanceof City),
+      brand: entities.filter((entity) => entity instanceof Brand),
+      dishType: entities.filter((entity) => entity instanceof DishType),
+      diet: entities.filter((entity) => entity instanceof Diet),
     };
 
     const createCombinations = (
-      currentEntities,
-      remainingTypes,
+      currentEntities: any,
+      remainingTypes: string[],
     ): SearchResultDto[] => {
       if (remainingTypes.length === 0) {
-        return [currentEntities];
+        const resultDto: SearchResultDto = {};
+        Object.keys(currentEntities).forEach((key) => {
+          if (key !== 'type') {
+            resultDto[key] = currentEntities[key];
+          }
+        });
+        return [resultDto];
       }
 
       const [nextType, ...restTypes] = remainingTypes;
-      const combinations = [];
+      const combinations: SearchResultDto[] = [];
 
       for (const entity of entityMap[nextType]) {
         const newEntities = { ...currentEntities, [nextType]: entity };
