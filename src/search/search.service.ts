@@ -1,11 +1,12 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { City } from '../db/entities/city.entity';
 import { Brand } from '../db/entities/brand.entity';
-import { DishType } from '../db/entities/dishType.entity';
+import { City } from '../db/entities/city.entity';
 import { Diet } from '../db/entities/diet.entity';
+import { DishType } from '../db/entities/dishType.entity';
 import { SearchResultDto } from './dto/search-result.dto';
+import { SearchQueryDto } from './dto/search-term.dto';
 
 @Injectable()
 export class SearchService {
@@ -20,75 +21,21 @@ export class SearchService {
     private readonly dietRepository: Repository<Diet>,
   ) {}
 
-  private async findEntitiesByType(
-    repository: Repository<any>,
+  private async findEntitiesByType<T>(
+    repository: Repository<T>,
     searchWords: string[],
-  ): Promise<any[]> {
-    const filteredWords = searchWords.filter((word) => word.length >= 3);
-
-    if (filteredWords.length === 0) {
-      return [];
-    }
+  ): Promise<T[]> {
+    if (!searchWords.length) return [];
 
     const query = repository.createQueryBuilder('entity');
-    filteredWords.forEach((word, index) => {
+
+    searchWords.forEach((word: string, index: number) => {
       query.orWhere(`LOWER(entity.name) LIKE LOWER(:word${index})`, {
         [`word${index}`]: `%${word}%`,
       });
     });
-    const entities = await query.getMany();
-    return entities;
-  }
 
-  async extractEntities(
-    searchTermDto: string,
-  ): Promise<{ message: string; results: SearchResultDto[] }> {
-    if (!searchTermDto) {
-      throw new BadRequestException('Search word is required.');
-    }
-
-    const searchWords = searchTermDto
-      .toLowerCase()
-      .split(' ')
-      .filter((word) => word.length >= 3);
-
-    if (searchWords.length === 0) {
-      return {
-        message:
-          'Search term must contain at least one word with three or more characters.',
-        results: [],
-      };
-    }
-
-    const cities = await this.findEntitiesByType(
-      this.cityRepository,
-      searchWords,
-    );
-    const brands = await this.findEntitiesByType(
-      this.brandRepository,
-      searchWords,
-    );
-    const dishTypes = await this.findEntitiesByType(
-      this.dishTypeRepository,
-      searchWords,
-    );
-    const diets = await this.findEntitiesByType(
-      this.dietRepository,
-      searchWords,
-    );
-
-    const allEntities = [...cities, ...brands, ...dishTypes, ...diets];
-
-    if (allEntities.length === 0) {
-      return {
-        message: 'Oops! We did not find what you are searching for.',
-        results: [],
-      };
-    }
-
-    const combinations = this.createCombinations(allEntities);
-
-    return { message: 'Search successful', results: combinations };
+    return query.getMany();
   }
 
   private createCombinations(entities: any[]): SearchResultDto[] {
@@ -133,5 +80,33 @@ export class SearchService {
     results.push(...createCombinations({}, entityTypes));
 
     return results;
+  }
+
+  async extractEntities(query: SearchQueryDto): Promise<SearchResultDto[]> {
+    const { searchTerm } = query;
+
+    const searchWords = searchTerm
+      .toLowerCase()
+      .split(' ')
+      .filter((word) => word.length >= 3);
+
+    if (searchWords.length === 0) {
+      return [];
+    }
+
+    const [cities, brands, dishTypes, diets] = await Promise.all([
+      this.findEntitiesByType(this.cityRepository, searchWords),
+      this.findEntitiesByType(this.brandRepository, searchWords),
+      this.findEntitiesByType(this.dishTypeRepository, searchWords),
+      this.findEntitiesByType(this.dietRepository, searchWords),
+    ]);
+
+    const allEntities = [...cities, ...brands, ...dishTypes, ...diets];
+
+    if (allEntities.length === 0) {
+      return [];
+    }
+
+    return this.createCombinations(allEntities);
   }
 }

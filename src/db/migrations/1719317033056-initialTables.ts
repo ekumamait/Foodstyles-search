@@ -1,39 +1,27 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class initialTables1719317033056 implements MigrationInterface {
+  name = 'initialTables1719317033056';
+
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `INSERT INTO cities (name) VALUES ('London'), ('New York'), ('Paris')`,
+      `CREATE TABLE "city" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, CONSTRAINT "PK_b222f51ce26f7e5ca86944a6739" PRIMARY KEY ("id"))`,
     );
-
     await queryRunner.query(
-      `INSERT INTO brands (name) VALUES ('McDonald''s'), ('Starbucks'), ('Burger King')`,
+      `CREATE TABLE "diet" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, CONSTRAINT "PK_f9d0f2b67d1c9bcaa6736f4cebd" PRIMARY KEY ("id"))`,
     );
-
     await queryRunner.query(
-      `INSERT INTO dish_types (name) VALUES ('Sushi'), ('Pizza'), ('Burger')`,
+      `CREATE TABLE "brand" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, CONSTRAINT "PK_a5d20765ddd942eb5de4eee2d7f" PRIMARY KEY ("id"))`,
     );
-
     await queryRunner.query(
-      `INSERT INTO diets (name) VALUES ('Vegan'), ('Vegetarian'), ('Gluten-Free')`,
+      `CREATE TABLE "dish_types" ("id" SERIAL NOT NULL, "name" character varying NOT NULL, CONSTRAINT "PK_30585c689b2c95d0ef592ea9a1c" PRIMARY KEY ("id"))`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `DELETE FROM cities WHERE name IN ('London', 'New York', 'Paris')`,
-    );
-
-    await queryRunner.query(
-      `DELETE FROM brands WHERE name IN ('McDonald''s', 'Starbucks', 'Burger King')`,
-    );
-
-    await queryRunner.query(
-      `DELETE FROM dish_types WHERE name IN ('Sushi', 'Pizza', 'Burger')`,
-    );
-
-    await queryRunner.query(
-      `DELETE FROM diets WHERE name IN ('Vegan', 'Vegetarian', 'Gluten-Free')`,
-    );
+    await queryRunner.query(`DROP TABLE "dish_types"`);
+    await queryRunner.query(`DROP TABLE "brand"`);
+    await queryRunner.query(`DROP TABLE "diet"`);
+    await queryRunner.query(`DROP TABLE "city"`);
   }
 }
