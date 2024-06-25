@@ -1,0 +1,15 @@
+module.exports = {
+  name: 'default',
+  type: process.env.TYPE,
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB,
+  synchronize: true,
+  logging: false,
+  entities: ['src/**/*.entity.ts'],
+  migrations: ['src/db/migrations/*.ts'],
+  seeds: ['src/db/seeds/*.ts'],
+  factories: ['src/db/factories/*.ts'],
+};
