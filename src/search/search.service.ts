@@ -20,54 +20,120 @@ export class SearchService {
     private readonly dietRepository: Repository<Diet>,
   ) {}
 
-  private async findEntityByName(
+  private async findEntitiesByType(
     repository: Repository<any>,
-    name: string,
-  ): Promise<any> {
-    return repository
-      .createQueryBuilder('entity')
-      .where('LOWER(entity.name) = LOWER(:name)', { name })
-      .getOne();
+    searchWords: string[],
+    entityType: string,
+  ): Promise<any[]> {
+    const filteredWords = searchWords.filter((word) => word.length >= 3);
+
+    if (filteredWords.length === 0) {
+      return [];
+    }
+
+    const query = repository.createQueryBuilder('entity');
+    filteredWords.forEach((word, index) => {
+      query.orWhere(`LOWER(entity.name) LIKE LOWER(:word${index})`, {
+        [`word${index}`]: `%${word}%`,
+      });
+    });
+    const entities = await query.getMany();
+    return entities.map((entity) => ({
+      type: entityType,
+      ...entity,
+    }));
   }
 
-  async getEntities(
+  async extractEntities(
     searchTermDto: string,
   ): Promise<{ message: string; results: SearchResultDto[] }> {
-    const results = [];
-
     if (!searchTermDto) {
       throw new BadRequestException('Search word is required.');
     }
 
-    const searchWords = searchTermDto.toLowerCase()?.split(' ');
+    const searchWords = searchTermDto
+      .toLowerCase()
+      .split(' ')
+      .filter((word) => word.length >= 3);
 
-    for (const word of searchWords) {
-      const city = await this.findEntityByName(this.cityRepository, word);
-      const brand = await this.findEntityByName(this.brandRepository, word);
-      const dishType = await this.findEntityByName(
-        this.dishTypeRepository,
-        word,
-      );
-      const diet = await this.findEntityByName(this.dietRepository, word);
-
-      const combination: SearchResultDto = {};
-      if (city) combination.city = city;
-      if (brand) combination.brand = brand;
-      if (dishType) combination.dishType = dishType;
-      if (diet) combination.diet = diet;
-
-      if (Object.keys(combination).length > 0) {
-        results.push(combination);
-      }
+    if (searchWords.length === 0) {
+      return {
+        message:
+          'Search term must contain at least one word with three or more characters.',
+        results: [],
+      };
     }
 
-    if (results.length === 0) {
+    const cities = await this.findEntitiesByType(
+      this.cityRepository,
+      searchWords,
+      'city',
+    );
+    const brands = await this.findEntitiesByType(
+      this.brandRepository,
+      searchWords,
+      'brand',
+    );
+    const dishTypes = await this.findEntitiesByType(
+      this.dishTypeRepository,
+      searchWords,
+      'dishType',
+    );
+    const diets = await this.findEntitiesByType(
+      this.dietRepository,
+      searchWords,
+      'diet',
+    );
+
+    const allEntities = [...cities, ...brands, ...dishTypes, ...diets];
+
+    if (allEntities.length === 0) {
       return {
         message: 'Oops! We did not find what you are searching for.',
         results: [],
       };
     }
 
-    return { message: 'Search successful', results };
+    const combinations = this.createCombinations(allEntities);
+
+    return { message: 'Search successful', results: combinations };
+  }
+
+  private createCombinations(entities: any[]): SearchResultDto[] {
+    const results: SearchResultDto[] = [];
+
+    const entityMap = {
+      city: entities.filter((entity) => entity.type === 'city'),
+      brand: entities.filter((entity) => entity.type === 'brand'),
+      dishType: entities.filter((entity) => entity.type === 'dishType'),
+      diet: entities.filter((entity) => entity.type === 'diet'),
+    };
+
+    const createCombinations = (
+      currentEntities,
+      remainingTypes,
+    ): SearchResultDto[] => {
+      if (remainingTypes.length === 0) {
+        return [currentEntities];
+      }
+
+      const [nextType, ...restTypes] = remainingTypes;
+      const combinations = [];
+
+      for (const entity of entityMap[nextType]) {
+        const newEntities = { ...currentEntities, [nextType]: entity };
+        combinations.push(...createCombinations(newEntities, restTypes));
+      }
+
+      return combinations;
+    };
+
+    const entityTypes = Object.keys(entityMap).filter(
+      (type) => entityMap[type].length > 0,
+    );
+
+    results.push(...createCombinations({}, entityTypes));
+
+    return results;
   }
 }

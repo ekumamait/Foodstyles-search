@@ -7,6 +7,6 @@ export class SearchController {
 
   @Get()
   async search(@Query('searchTerm') term: string) {
-    return this.searchService.getEntities(term);
+    return this.searchService.extractEntities(term);
   }
 }
