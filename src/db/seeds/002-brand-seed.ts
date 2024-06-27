@@ -57,6 +57,8 @@ export default class CreateBrands implements Seeder {
       { id: 50, name: 'Wildwood' },
     ];
 
+    await connection.getRepository(Brand).clear();
+
     const brandsSeeded = await connection.manager.find(Brand);
     if (brandsSeeded.length === 0) {
       await connection

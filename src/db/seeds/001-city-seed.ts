@@ -57,6 +57,8 @@ export default class CreateCities implements Seeder {
       { id: 50, name: 'Brighton' },
     ];
 
+    await connection.getRepository(City).clear();
+
     const citiesSeeded = await connection.manager.find(City);
     if (citiesSeeded.length === 0) {
       await connection

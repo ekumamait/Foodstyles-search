@@ -25,6 +25,8 @@ export default class CreateDiets implements Seeder {
       { id: 18, name: 'Shellfish-Free' },
     ];
 
+    await connection.getRepository(Diet).clear();
+
     const dietsSeeded = await connection.manager.find(Diet);
     if (dietsSeeded.length === 0) {
       await connection
