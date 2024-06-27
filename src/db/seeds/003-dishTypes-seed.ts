@@ -107,6 +107,8 @@ export default class CreateDishTypes implements Seeder {
       { id: 100, name: 'Carbonara' },
     ];
 
+    await connection.getRepository(DishType).clear();
+
     const dishTypesSeeded = await connection.manager.find(DishType);
     if (dishTypesSeeded.length === 0) {
       await connection
