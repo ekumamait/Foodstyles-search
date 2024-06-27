@@ -43,33 +43,49 @@ export class SearchService {
     const createCombinations = (
       currentEntities: any,
       remainingTypes: string[],
-    ): SearchResultDto[] => {
+    ): void => {
       if (remainingTypes.length === 0) {
-        const resultDto: SearchResultDto = {};
-        Object.keys(currentEntities).forEach((key) => {
-          if (key !== 'type') {
-            resultDto[key] = currentEntities[key];
-          }
-        });
-        return [resultDto];
+        results.push({ ...currentEntities });
+        return;
       }
 
       const [nextType, ...restTypes] = remainingTypes;
-      const combinations: SearchResultDto[] = [];
 
       for (const entity of entityMap[nextType]) {
-        const newEntities = { ...currentEntities, [nextType]: entity.name };
-        combinations.push(...createCombinations(newEntities, restTypes));
-      }
+        const newEntities = {
+          ...currentEntities,
+          [nextType]: {
+            id: entity.id,
+            name: entity.name,
+          },
+        };
+        if (nextType === 'brand' && currentEntities['dishType']) {
+          const brandObject = { ...newEntities };
+          delete brandObject.dishType;
+          results.push(brandObject);
 
-      return combinations;
+          const dishTypeObject = { ...currentEntities };
+          delete dishTypeObject.brand;
+          results.push(dishTypeObject);
+        } else if (nextType === 'dishType' && currentEntities['brand']) {
+          const dishTypeObject = { ...newEntities };
+          delete dishTypeObject.brand;
+          results.push(dishTypeObject);
+
+          const brandObject = { ...currentEntities };
+          delete brandObject.dishType;
+          results.push(brandObject);
+        } else {
+          createCombinations(newEntities, restTypes);
+        }
+      }
     };
 
     const entityTypes = Object.keys(entityMap).filter(
       (type) => entityMap[type].length > 0,
     );
 
-    results.push(...createCombinations({}, entityTypes));
+    createCombinations({}, entityTypes);
 
     return results;
   }
