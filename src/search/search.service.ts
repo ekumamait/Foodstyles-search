@@ -30,84 +30,77 @@ export class SearchService {
     return results;
   }
 
-  private createCombinations(entities: any[]): SearchResultDto[] {
-    const results: SearchResultDto[] = [];
+  private generateCombinations(searchTerms, entityList): SearchResultDto[] {
+    const matches = [];
 
-    const entityMap = {
-      city: entities.filter((entity) => entity.type === 'city'),
-      brand: entities.filter((entity) => entity.type === 'brand'),
-      dishType: entities.filter((entity) => entity.type === 'dishType'),
-      diet: entities.filter((entity) => entity.type === 'diet'),
-    };
+    searchTerms.forEach(() => {
+      matches.push({});
+    });
 
-    const createCombinations = (
-      currentEntities: any,
-      remainingTypes: string[],
-    ): void => {
-      if (remainingTypes.length === 0) {
-        results.push({ ...currentEntities });
-        return;
-      }
-
-      const [nextType, ...restTypes] = remainingTypes;
-
-      for (const entity of entityMap[nextType]) {
-        const newEntities = {
-          ...currentEntities,
-          [nextType]: {
-            id: entity.id,
-            name: entity.name,
-          },
-        };
-        if (nextType === 'brand' && currentEntities['dishType']) {
-          const brandObject = { ...newEntities };
-          delete brandObject.dishType;
-          results.push(brandObject);
-
-          const dishTypeObject = { ...currentEntities };
-          delete dishTypeObject.brand;
-          results.push(dishTypeObject);
-        } else if (nextType === 'dishType' && currentEntities['brand']) {
-          const dishTypeObject = { ...newEntities };
-          delete dishTypeObject.brand;
-          results.push(dishTypeObject);
-
-          const brandObject = { ...currentEntities };
-          delete brandObject.dishType;
-          results.push(brandObject);
-        } else {
-          createCombinations(newEntities, restTypes);
+    searchTerms.forEach((term, index) => {
+      term = term.toLowerCase();
+      entityList.forEach((entity) => {
+        if (entity.name.toLowerCase().includes(term)) {
+          if (!matches[index][entity.type]) {
+            matches[index][entity.type] = entity;
+          }
         }
-      }
-    };
+      });
+    });
 
-    const entityTypes = Object.keys(entityMap).filter(
-      (type) => entityMap[type].length > 0,
-    );
+    return this.getAllCombinations(matches);
+  }
 
-    createCombinations({}, entityTypes);
+  private getAllCombinations(
+    arr,
+    index = 0,
+    result = [],
+    current = {},
+  ): SearchResultDto[] {
+    if (index === arr.length) {
+      result.push(current);
+    } else {
+      const keys = Object.keys(arr[index]);
+      keys.forEach((key) => {
+        const element = arr[index][key];
+        const newCurrent = { ...current };
+        newCurrent[key] = element;
+        this.getAllCombinations(arr, index + 1, result, newCurrent);
+      });
+    }
+    return result;
+  }
 
-    return results;
+  private buildSearchResultDto(entities): SearchResultDto {
+    const result: SearchResultDto = {};
+    if (typeof entities === 'object' && entities !== null) {
+      const types = Object.keys(entities);
+      types.forEach((type) => {
+        const entity = entities[type];
+        const { id, name } = entity;
+        result[type] = { id, name };
+      });
+    }
+    return result;
   }
 
   async extractEntities(query: SearchQueryDto): Promise<SearchResultDto[]> {
     const { searchTerm } = query;
-
     const searchWords = searchTerm
       .toLowerCase()
       .split(' ')
       .filter((word) => word.length >= 3);
-
-    if (searchWords.length === 0) {
-      return [];
-    }
-
     const allEntities = await this.findEntitiesByType(searchWords);
 
     if (allEntities.length === 0) {
       return [];
     }
 
-    return this.createCombinations(allEntities);
+    const combinations = this.generateCombinations(searchWords, allEntities);
+
+    const results: SearchResultDto[] = combinations.map((combination) =>
+      this.buildSearchResultDto(combination),
+    );
+    return results;
   }
 }
