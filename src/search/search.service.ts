@@ -31,35 +31,46 @@ export class SearchService {
 
   private generateCombinations(searchTerms, entityList): SearchResultDto[] {
     const matches = [];
-
     searchTerms.forEach((term) => {
       const termMatches = entityList.filter((entity) =>
         entity.name.toLowerCase().includes(term.toLowerCase()),
       );
       matches.push(termMatches);
     });
-
     return this.getAllCombinations(matches);
   }
 
   private getAllCombinations(
     arr,
     index = 0,
-    result = [],
     current = {},
+    result = [],
   ): SearchResultDto[] {
     if (index === arr.length) {
       result.push({ ...current });
       return result;
     }
-
-    for (const element of arr[index]) {
+    const nextElements = arr[index];
+    if (nextElements.length === 0) {
+      return this.getAllCombinations(arr, index + 1, current, result);
+    }
+    for (const element of nextElements) {
       if (!current[element.type]) {
         const newCurrent = {
           ...current,
           [element.type]: { id: element.id, name: element.name },
         };
-        this.getAllCombinations(arr, index + 1, result, newCurrent);
+        this.getAllCombinations(arr, index + 1, newCurrent, result);
+      } else {
+        const clonedCurrent = { ...current };
+        result.push(clonedCurrent);
+        for (const existingType in clonedCurrent) {
+          if (existingType !== element.type) {
+            clonedCurrent[existingType] = { ...clonedCurrent[existingType] };
+          }
+        }
+        clonedCurrent[element.type] = { id: element.id, name: element.name };
+        this.getAllCombinations(arr, index + 1, clonedCurrent, result);
       }
     }
     return result;
@@ -76,7 +87,6 @@ export class SearchService {
     if (allEntities.length === 0) {
       return [];
     }
-
     const combinations = this.generateCombinations(searchWords, allEntities);
     return combinations;
   }
