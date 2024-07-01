@@ -26,26 +26,17 @@ export class SearchService {
     `;
 
     const results = await this.cityRepository.query(query, [parameters]);
-
     return results;
   }
 
   private generateCombinations(searchTerms, entityList): SearchResultDto[] {
     const matches = [];
 
-    searchTerms.forEach(() => {
-      matches.push({});
-    });
-
-    searchTerms.forEach((term, index) => {
-      term = term.toLowerCase();
-      entityList.forEach((entity) => {
-        if (entity.name.toLowerCase().includes(term)) {
-          if (!matches[index][entity.type]) {
-            matches[index][entity.type] = entity;
-          }
-        }
-      });
+    searchTerms.forEach((term) => {
+      const termMatches = entityList.filter((entity) =>
+        entity.name.toLowerCase().includes(term.toLowerCase()),
+      );
+      matches.push(termMatches);
     });
 
     return this.getAllCombinations(matches);
@@ -58,28 +49,18 @@ export class SearchService {
     current = {},
   ): SearchResultDto[] {
     if (index === arr.length) {
-      result.push(current);
-    } else {
-      const keys = Object.keys(arr[index]);
-      keys.forEach((key) => {
-        const element = arr[index][key];
-        const newCurrent = { ...current };
-        newCurrent[key] = element;
-        this.getAllCombinations(arr, index + 1, result, newCurrent);
-      });
+      result.push({ ...current });
+      return result;
     }
-    return result;
-  }
 
-  private buildSearchResultDto(entities): SearchResultDto {
-    const result: SearchResultDto = {};
-    if (typeof entities === 'object' && entities !== null) {
-      const types = Object.keys(entities);
-      types.forEach((type) => {
-        const entity = entities[type];
-        const { id, name } = entity;
-        result[type] = { id, name };
-      });
+    for (const element of arr[index]) {
+      if (!current[element.type]) {
+        const newCurrent = {
+          ...current,
+          [element.type]: { id: element.id, name: element.name },
+        };
+        this.getAllCombinations(arr, index + 1, result, newCurrent);
+      }
     }
     return result;
   }
@@ -97,10 +78,6 @@ export class SearchService {
     }
 
     const combinations = this.generateCombinations(searchWords, allEntities);
-
-    const results: SearchResultDto[] = combinations.map((combination) =>
-      this.buildSearchResultDto(combination),
-    );
-    return results;
+    return combinations;
   }
 }
