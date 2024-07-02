@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { City } from '../db/entities/city.entity';
 import { SearchResultDto } from './dto/search-result.dto';
 import { SearchQueryDto } from './dto/search-term.dto';
+import { _404 } from '../common/constants/response-messages';
+import { IPaginationOptions } from 'nestjs-typeorm-paginate';
+import fuzz from 'fuzzball';
+import { PaginatedDataResponseDto } from '../common/dto/pagination-data-response.dto';
 
 @Injectable()
 export class SearchService {
@@ -32,9 +36,10 @@ export class SearchService {
   private generateCombinations(searchTerms, entityList): SearchResultDto[] {
     const matches = [];
     searchTerms.forEach((term) => {
-      const termMatches = entityList.filter((entity) =>
-        entity.name.toLowerCase().includes(term.toLowerCase()),
-      );
+      const termMatches = entityList.filter((entity) => {
+        const ratio = fuzz.ratio(term.toLowerCase(), entity.name.toLowerCase());
+        return ratio > 64;
+      });
       matches.push(termMatches);
     });
     return this.getAllCombinations(matches);
@@ -76,18 +81,34 @@ export class SearchService {
     return result;
   }
 
-  async extractEntities(query: SearchQueryDto): Promise<SearchResultDto[]> {
+  async extractEntities(
+    query: SearchQueryDto,
+    paginationOptions: IPaginationOptions,
+  ): Promise<PaginatedDataResponseDto<any>> {
     const { searchTerm } = query;
     const searchWords = searchTerm
       .toLowerCase()
       .split(' ')
       .filter((word) => word.length >= 3);
     const allEntities = await this.findEntitiesByType(searchWords);
-
     if (allEntities.length === 0) {
-      return [];
+      throw new NotFoundException(_404.MATCH_NOT_FOUND);
     }
     const combinations = this.generateCombinations(searchWords, allEntities);
-    return combinations;
+    const currentPage = Number(paginationOptions.page) || 1;
+    const limit = Number(paginationOptions.limit) || 25;
+    const totalItems = combinations.length;
+    const start = (currentPage - 1) * limit;
+    const end = start + limit;
+
+    const paginatedResults = combinations.slice(start, end);
+
+    return PaginatedDataResponseDto.create(
+      totalItems,
+      limit,
+      Math.ceil(totalItems / limit),
+      currentPage,
+      paginatedResults,
+    );
   }
 }
